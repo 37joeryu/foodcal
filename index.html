@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매일 식단 및 칼로리 관리 프로그램</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-lg p-6">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">🥗 스마트 식단 및 칼로리 관리</h1>
+
+        <!-- 날짜 선택 영역 -->
+        <div class="mb-4 bg-gray-50 p-3 rounded-lg border flex items-center justify-between">
+            <label class="text-sm font-semibold text-gray-700">기록 날짜</label>
+            <input type="date" id="selectedDate" onchange="changeDate()" class="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+
+        <!-- 권장 칼로리 설정 (수동 또는 자동 계산 선택) -->
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-sm font-semibold text-blue-700">하루 권장 목표 칼로리 (kcal)</label>
+                <button onclick="toggleCalculator()" class="text-xs text-blue-600 underline hover:text-blue-800">신체 정보로 자동 계산</button>
+            </div>
+            <div class="flex gap-2">
+                <input type="number" id="targetCalories" value="2000" class="flex-1 border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button onclick="saveTarget()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">설정</button>
+            </div>
+
+            <!-- 신체 정보 입력 패널 (숨김 상태로 시작) -->
+            <div id="calculatorPanel" class="hidden mt-4 pt-4 border-t border-blue-200 space-y-3">
+                <p class="text-xs font-semibold text-blue-800">📝 해리스-베네딕트 공식 기반 자동 계산</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">성별</label>
+                        <select id="calcGender" class="w-full border rounded-lg px-2 py-1.5 text-xs bg-white">
+                            <option value="male">남성</option>
+                            <option value="female">여성</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">나이</label>
+                        <input type="number" id="calcAge" placeholder="세" class="w-full border rounded-lg px-2 py-1.5 text-xs bg-white">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">키 (cm)</label>
+                        <input type="number" id="calcHeight" placeholder="cm" class="w-full border rounded-lg px-2 py-1.5 text-xs bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">몸무게 (kg)</label>
+                        <input type="number" id="calcWeight" placeholder="kg" class="w-full border rounded-lg px-2 py-1.5 text-xs bg-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">활동 수준</label>
+                    <select id="calcActivity" class="w-full border rounded-lg px-2 py-1.5 text-xs bg-white">
+                        <option value="1.2">거의 운동 안 함 (기초대사량 수준)</option>
+                        <option value="1.375">가벼운 운동 (주 1~3회)</option>
+                        <option value="1.55" selected>보통 운동 (주 3~5회)</option>
+                        <option value="1.725">적극적인 운동 (주 6~7회)</option>
+                        <option value="1.9">매우 격렬한 운동 (선수 수준)</option>
+                    </select>
+                </div>
+                <button onclick="calculateAndApplyCalories()" class="w-full bg-blue-700 text-white py-2 rounded-lg text-xs font-semibold hover:bg-blue-800">계산해서 적용하기</button>
+            </div>
+        </div>
+
+        <!-- 칼로리 현황 요약 -->
+        <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+            <div class="bg-gray-50 p-3 rounded-lg border">
+                <p class="text-xs text-gray-500">목표</p>
+                <p id="displayTarget" class="text-lg font-bold text-gray-800">2000</p>
+            </div>
+            <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                <p class="text-xs text-green-600">섭취함</p>
+                <p id="displayConsumed" class="text-lg font-bold text-green-700">0</p>
+            </div>
+            <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                <p class="text-xs text-orange-600">남은 칼로리</p>
+                <p id="displayRemaining" class="text-lg font-bold text-orange-700">2000</p>
+            </div>
+        </div>
+
+        <!-- 진행 바 -->
+        <div class="mb-6">
+            <div class="flex justify-between text-xs text-gray-600 mb-1">
+                <span>칼로리 달성률</span>
+                <span id="percentage">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 식단 입력 폼 -->
+        <div class="mb-6 border-t pt-4">
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">식단 추가하기</h2>
+            <div class="space-y-3">
+                <input type="text" id="foodName" placeholder="음식 이름 (예: 닭가슴살 샐러드)" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="number" id="foodCalories" placeholder="칼로리 (kcal)" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button onclick="addMeal()" class="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">식단 추가</button>
+            </div>
+        </div>
+
+        <!-- 식단 리스트 -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">선택한 날짜의 식단</h2>
+            <ul id="mealList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- 자바스크립트로 동적 생성 -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 오늘 날짜 구하기 (YYYY-MM-DD 형식)
+        function getTodayString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 초기 날짜 설정
+        let currentDate = getTodayString();
+        document.getElementById('selectedDate').value = currentDate;
+
+        // 데이터 불러오기 또는 초기화
+        let targets = JSON.parse(localStorage.getItem('targetCaloriesMap')) || {};
+        let mealsMap = JSON.parse(localStorage.getItem('mealsMap')) || {};
+
+        function getCurrentTarget() {
+            return targets[currentDate] ? targets[currentDate] : 2000;
+        }
+
+        function getCurrentMeals() {
+            return mealsMap[currentDate] ? mealsMap[currentDate] : [];
+        }
+
+        // 날짜 변경 시
+        function changeDate() {
+            currentDate = document.getElementById('selectedDate').value;
+            updateUI();
+        }
+
+        // 목표 칼로리 저장
+        function saveTarget() {
+            const val = parseInt(document.getElementById('targetCalories').value);
+            if (!val || val <= 0) {
+                alert('올바른 칼로리를 입력해주세요.');
+                return;
+            }
+            targets[currentDate] = val;
+            localStorage.setItem('targetCaloriesMap', JSON.stringify(targets));
+            updateUI();
+            alert('목표 칼로리가 설정되었습니다.');
+        }
+
+        // 칼로리 자동 계산 패널 토글
+        function toggleCalculator() {
+            const panel = document.getElementById('calculatorPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        // 해리스-베네딕트 공식 계산
+        function calculateAndApplyCalories() {
+            const gender = document.getElementById('calcGender').value;
+            const age = parseFloat(document.getElementById('calcAge').value);
+            const height = parseFloat(document.getElementById('calcHeight').value);
+            const weight = parseFloat(document.getElementById('calcWeight').value);
+            const activity = parseFloat(document.getElementById('calcActivity').value);
+
+            if (isNaN(age) || isNaN(height) || isNaN(weight) || age <= 0 || height <= 0 || weight <= 0) {
+                alert('나이, 키, 몸무게를 정확히 입력해주세요.');
+                return;
+            }
+
+            let bmr = 0;
+            if (gender === 'male') {
+                bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+            } else {
+                bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+            }
+
+            const recommended = Math.round(bmr * activity);
+            document.getElementById('targetCalories').value = recommended;
+            
+            // 자동 저장 및 UI 반영
+            targets[currentDate] = recommended;
+            localStorage.setItem('targetCaloriesMap', JSON.stringify(targets));
+            updateUI();
+            
+            toggleCalculator();
+            alert(`계산된 권장 칼로리 ${recommended} kcal가 적용되었습니다.`);
+        }
+
+        // 식단 추가
+        function addMeal() {
+            const name = document.getElementById('foodName').value.trim();
+            const calories = parseInt(document.getElementById('foodCalories').value);
+
+            if (!name || isNaN(calories) || calories < 0) {
+                alert('음식 이름과 올바른 칼로리를 입력해주세요.');
+                return;
+            }
+
+            let meals = getCurrentMeals();
+            meals.push({ id: Date.now(), name, calories });
+            mealsMap[currentDate] = meals;
+            localStorage.setItem('mealsMap', JSON.stringify(mealsMap));
+
+            document.getElementById('foodName').value = '';
+            document.getElementById('foodCalories').value = '';
+            updateUI();
+        }
+
+        // 식단 삭제
+        function deleteMeal(id) {
+            let meals = getCurrentMeals();
+            meals = meals.filter(meal => meal.id !== id);
+            mealsMap[currentDate] = meals;
+            localStorage.setItem('mealsMap', JSON.stringify(mealsMap));
+            updateUI();
+        }
+
+        // 화면 업데이트
+        function updateUI() {
+            const target = getCurrentTarget();
+            const meals = getCurrentMeals();
+
+            document.getElementById('targetCalories').value = target;
+            document.getElementById('displayTarget').innerText = target;
+            
+            const totalConsumed = meals.reduce((sum, meal) => sum + meal.calories, 0);
+            document.getElementById('displayConsumed').innerText = totalConsumed;
+
+            const remaining = target - totalConsumed;
+            document.getElementById('displayRemaining').innerText = remaining;
+
+            const percent = Math.min(Math.round((totalConsumed / target) * 100), 100);
+            document.getElementById('percentage').innerText = percent + '%';
+            
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = percent + '%';
+            
+            if (totalConsumed > target) {
+                progressBar.className = "bg-red-500 h-3 rounded-full transition-all duration-300";
+            } else {
+                progressBar.className = "bg-blue-600 h-3 rounded-full transition-all duration-300";
+            }
+
+            const mealListEl = document.getElementById('mealList');
+            mealListEl.innerHTML = '';
+
+            if (meals.length === 0) {
+                mealListEl.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">등록된 식단이 없습니다.</p>';
+                return;
+            }
+
+            meals.forEach(meal => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border text-sm";
+                li.innerHTML = `
+                    <span class="font-medium text-gray-700">${meal.name}</span>
+                    <div class="flex items-center gap-3">
+                        <span class="text-gray-600">${meal.calories} kcal</span>
+                        <button onclick="deleteMeal(${meal.id})" class="text-red-500 hover:text-red-700 font-bold text-xs">삭제</button>
+                    </div>
+                `;
+                mealListEl.appendChild(li);
+            });
+        }
+
+        // 초기 UI 실행
+        updateUI();
+    </script>
+</body>
+</html>
